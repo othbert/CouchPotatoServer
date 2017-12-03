@@ -1,7 +1,9 @@
 CouchPotato
 =====
 
-[![Join the chat at https://gitter.im/RuudBurger/CouchPotatoServer](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/RuudBurger/CouchPotatoServer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/CouchPotato/CouchPotatoServer](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/CouchPotato/CouchPotatoServer?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/CouchPotato/CouchPotatoServer.svg?branch=master)](https://travis-ci.org/CouchPotato/CouchPotatoServer)
+[![Coverage Status](https://coveralls.io/repos/CouchPotato/CouchPotatoServer/badge.svg?branch=master&service=github)](https://coveralls.io/github/CouchPotato/CouchPotatoServer?branch=master)
 
 CouchPotato (CP) is an automatic NZB and torrent downloader. You can keep a "movies I want"-list and it will search for NZBs/torrents of these movies every X hours.
 Once a movie is found, it will send it to SABnzbd or download the torrent to a specified directory.
@@ -11,13 +13,13 @@ Once a movie is found, it will send it to SABnzbd or download the torrent to a s
 
 CouchPotatoServer can be run from source. This will use *git* as updater, so make sure that is installed.
 
-Windows, see [the CP forum](http://couchpota.to/forum/showthread.php?tid=14) for more details:
+Windows, see [the CP forum](http://couchpota.to/forum/viewtopic.php?t=14) for more details:
 
 * Install [Python 2.7](http://www.python.org/download/releases/2.7.3/)
 * Then install [PyWin32 2.7](http://sourceforge.net/projects/pywin32/files/pywin32/Build%20217/) and [GIT](http://git-scm.com/)
 * If you come and ask on the forums 'why directory selection no work?', I will kill a kitten, also this is because you need PyWin32
 * Open up `Git Bash` (or CMD) and go to the folder you want to install CP. Something like Program Files.
-* Run `git clone https://github.com/RuudBurger/CouchPotatoServer.git`.
+* Run `git clone https://github.com/CouchPotato/CouchPotatoServer.git`.
 * You can now start CP via `CouchPotatoServer\CouchPotato.py` to start
 * Your browser should open up, but if it doesn't go to `http://localhost:5050/`
 
@@ -28,7 +30,7 @@ OS X:
 * Install [LXML](http://lxml.de/installation.html) for better/faster website scraping 
 * Open up `Terminal`
 * Go to your App folder `cd /Applications`
-* Run `git clone https://github.com/RuudBurger/CouchPotatoServer.git`
+* Run `git clone https://github.com/CouchPotato/CouchPotatoServer.git`
 * Then do `python CouchPotatoServer/CouchPotato.py`
 * Your browser should open up, but if it doesn't go to `http://localhost:5050/`
 
@@ -39,7 +41,7 @@ Linux:
 * Install [LXML](http://lxml.de/installation.html) for better/faster website scraping 
 * 'cd' to the folder of your choosing.
 * Install [PyOpenSSL](https://pypi.python.org/pypi/pyOpenSSL) with `pip install --upgrade pyopenssl`
-* Run `git clone https://github.com/RuudBurger/CouchPotatoServer.git`
+* Run `git clone https://github.com/CouchPotato/CouchPotatoServer.git`
 * Then do `python CouchPotatoServer/CouchPotato.py` to start
 * (Ubuntu / Debian with upstart) To run on boot copy the init script `sudo cp CouchPotatoServer/init/ubuntu /etc/init.d/couchpotato`
 * (Ubuntu / Debian with upstart) Copy the default paths file `sudo cp CouchPotatoServer/init/ubuntu.default /etc/default/couchpotato`
@@ -54,9 +56,6 @@ Linux:
 Docker:
 * You can use [linuxserver.io](https://github.com/linuxserver/docker-couchpotato) or [razorgirl's](https://github.com/razorgirl/docker-couchpotato) to quickly build your own isolated app container. It's based on the Linux instructions above. For more info about Docker check out the [official website](https://www.docker.com).
 
-Ansible:
-* You can use [peerster's] (https://github.com/peerster/ansible-couchpotato) [ansible] (http://www.ansible.com) role to deploy couchpotato.
-
 FreeBSD:
 
 * Become root with `su`
@@ -64,7 +63,7 @@ FreeBSD:
 * Install required tools `pkg install python py27-sqlite3 fpc-libcurl docbook-xml git-lite`
 * For default install location and running as root `cd /usr/local`
 * If running as root, expects python here `ln -s /usr/local/bin/python /usr/bin/python`
-* Run `git clone https://github.com/RuudBurger/CouchPotatoServer.git`
+* Run `git clone https://github.com/CouchPotato/CouchPotatoServer.git`
 * Copy the startup script `cp CouchPotatoServer/init/freebsd /usr/local/etc/rc.d/couchpotato`
 * Make startup script executable `chmod 555 /usr/local/etc/rc.d/couchpotato`
 * Add startup to boot `echo 'couchpotato_enable="YES"' >> /etc/rc.conf`

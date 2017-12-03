@@ -12,8 +12,8 @@ config = [{
             'tab': 'downloaders',
             'list': 'download_providers',
             'name': 'putio',
-            'label': 'put.io',
-            'description': 'This will start a torrent download on <a href="http://put.io">Put.io</a>.',
+            'label': 'Put.io',
+            'description': 'This will start a torrent download on <a href="https://put.io/" target="_blank">Put.io</a>.',
             'wizard': True,
             'options': [
                 {
@@ -31,6 +31,12 @@ config = [{
                 {
                     'name': 'folder',
                     'description': ('The folder on putio where you want the upload to go','Will find the first first folder that matches this name'),
+                    'default': 0,
+                },
+                {
+                    'name': 'https',
+                    'description': 'Set to true if your callback host accepts https instead of http',
+                    'type': 'bool',
                     'default': 0,
                 },
                 {

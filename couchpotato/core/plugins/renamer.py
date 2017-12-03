@@ -216,6 +216,9 @@ class Renamer(Plugin):
                 except:
                     log.error('Failed getting files from %s: %s', (media_folder, traceback.format_exc()))
 
+                # post_filter files from configuration; this is a ":"-separated list of globs
+                files = self.filesAfterIgnoring(files)
+
         db = get_db()
 
         # Extend the download info with info stored in the downloaded release
@@ -347,10 +350,21 @@ class Renamer(Plugin):
                     'category': category_label,
                     '3d': '3D' if group['meta_data']['quality'].get('is_3d', 0) else '',
                     '3d_type': group['meta_data'].get('3d_type'),
+                    '3d_type_short': group['meta_data'].get('3d_type'),
                 }
 
                 if replacements['mpaa_only'] not in ('G', 'PG', 'PG-13', 'R', 'NC-17'):
                     replacements['mpaa_only'] = 'Not Rated'
+
+                if replacements['3d_type_short']:
+                    replacements['3d_type_short'] = replacements['3d_type_short'].replace('Half ', 'H').replace('Full ', '')
+                if self.conf('use_tab_threed') and replacements['3d_type']:
+                    if 'OU' in replacements['3d_type']:
+                        replacements['3d_type'] = replacements['3d_type'].replace('OU','TAB')
+                if self.conf('use_tab_threed') and replacements['3d_type_short']:
+                    if 'OU' in replacements['3d_type_short']:
+                        replacements['3d_type_short'] = replacements['3d_type_short'].replace('OU','TAB')
+                    
 
                 for file_type in group['files']:
 
@@ -657,7 +671,7 @@ class Renamer(Plugin):
                     group_folder = media_folder
                 else:
                     # Delete the first empty subfolder in the tree relative to the 'from' folder
-                    group_folder = sp(os.path.join(base_folder, os.path.relpath(group['parentdir'], base_folder).split(os.path.sep)[0]))
+                    group_folder = sp(os.path.join(base_folder, toUnicode(os.path.relpath(group['parentdir'], base_folder)).split(os.path.sep)[0]))
 
                 try:
                     if self.conf('cleanup') or self.conf('move_leftover'):
@@ -807,7 +821,7 @@ Remove it if you want it to be renamed (again, or at least let it try again)
             ignore_files.extend(fnmatch.filter([sp(os.path.join(root, filename)) for filename in filenames], '*%s.ignore' % tag))
 
         # Match all found ignore files with the tag_files and return True found
-        for tag_file in tag_files:
+        for tag_file in [tag_files] if isinstance(tag_files,str) else tag_files:
             ignore_file = fnmatch.filter(ignore_files, fnEscape('%s.%s.ignore' % (os.path.splitext(tag_file)[0], tag if tag else '*')))
             if ignore_file:
                 return True
@@ -907,7 +921,7 @@ Remove it if you want it to be renamed (again, or at least let it try again)
 
         replaces = [
             ('\.+', '.'), ('_+', '_'), ('-+', '-'), ('\s+', ' '), (' \\\\', '\\\\'), (' /', '/'),
-            ('(\s\.)+', '.'), ('(-\.)+', '.'), ('(\s-[^\s])+', '-'),
+            ('(\s\.)+', '.'), ('(-\.)+', '.'), ('(\s-[^\s])+', '-'), (' ]', ']'),
         ]
 
         for r in replaces:
@@ -1008,14 +1022,14 @@ Remove it if you want it to be renamed (again, or at least let it try again)
                                 break
 
                     if not found_release:
-                        log.info('%s not found in downloaders', nzbname)
-
                         #Check status if already missing and for how long, if > 1 week, set to ignored else to missing
                         if rel.get('status') == 'missing':
                             if rel.get('last_edit') < int(time.time()) - 7 * 24 * 60 * 60:
+                                log.info('%s not found in downloaders after 7 days, setting status to ignored', nzbname)
                                 fireEvent('release.update_status', rel.get('_id'), status = 'ignored', single = True)
                         else:
                             # Set the release to missing
+                            log.info('%s not found in downloaders, setting status to missing', nzbname)
                             fireEvent('release.update_status', rel.get('_id'), status = 'missing', single = True)
 
                         # Continue with next release
@@ -1165,6 +1179,30 @@ Remove it if you want it to be renamed (again, or at least let it try again)
     def movieInFromFolder(self, media_folder):
         return media_folder and isSubFolder(media_folder, sp(self.conf('from'))) or not media_folder
 
+    @property
+    def ignored_in_path(self):
+        return self.conf('ignored_in_path').split(":") if self.conf('ignored_in_path') else []
+
+    def filesAfterIgnoring(self, original_file_list):
+        kept_files = []
+        for path in original_file_list:
+            if self.keepFile(path):
+                kept_files.append(path)
+            else:
+                log.debug('Ignored "%s" during renaming', path)
+        return kept_files
+
+    def keepFile(self, filename):
+
+        # ignoredpaths
+        for i in self.ignored_in_path:
+            if i in filename.lower():
+                log.debug('Ignored "%s" contains "%s".', (filename, i))
+                return False
+
+        # All is OK
+        return True
+
     def extractFiles(self, folder = None, media_folder = None, files = None, cleanup = False):
         if not files: files = []
 
@@ -1228,6 +1266,9 @@ Remove it if you want it to be renamed (again, or at least let it try again)
                                 log.error('Rar modify date enabled, but failed: %s', traceback.format_exc())
                         extr_files.append(extr_file_path)
                 del rar_handle
+                # Tag archive as extracted if no cleanup.
+                if not cleanup and os.path.isfile(extr_file_path):
+                    self.tagRelease(release_download = {'folder': os.path.dirname(archive['file']), 'files': [archive['file']]}, tag = 'extracted')
             except Exception as e:
                 log.error('Failed to extract %s: %s %s', (archive['file'], e, traceback.format_exc()))
                 continue
@@ -1295,6 +1336,7 @@ rename_options = {
         'quality_type': '(HD) or (SD)',
         '3d': '3D',
         '3d_type': '3D Type (Full SBS)',
+        '3d_type_short' : 'Short 3D Type (FSBS)',
         'video': 'Video (x264)',
         'audio': 'Audio (DTS)',
         'group': 'Releasegroup name',
@@ -1357,11 +1399,25 @@ config = [{
                 },
                 {
                     'advanced': True,
+                    'name': 'use_tab_threed',
+                    'type': 'bool',
+                    'label': 'Use TAB 3D',
+                    'description': ('Use TAB (Top And Bottom) instead of OU (Over Under).','This will allow Kodi to recognize vertical formatted 3D movies properly.'),
+                    'default': True
+                },
+                {
+                    'advanced': True,
                     'name': 'replace_doubles',
                     'type': 'bool',
                     'label': 'Clean Name',
-                    'description': ('Attempt to clean up double separaters due to missing data for fields.','Sometimes this eliminates wanted white space (see <a href="https://github.com/RuudBurger/CouchPotatoServer/issues/2782">#2782</a>).'),
+                    'description': ('Attempt to clean up double separaters due to missing data for fields.','Sometimes this eliminates wanted white space (see <a href="https://github.com/CouchPotato/CouchPotatoServer/issues/2782" target="_blank">#2782</a>).'),
                     'default': True
+                },
+                {
+                    'name': 'ignored_in_path',
+                    'label': 'Ignored file patterns',
+                    'description': ('A list of globs to path match when scanning, separated by ":"', 'anything on this list will be skipped during rename operations'),
+                    'default': '*/.sync/*',
                 },
                 {
                     'name': 'unrar',
@@ -1378,7 +1434,7 @@ config = [{
                     'advanced': True,
                     'name': 'unrar_modify_date',
                     'type': 'bool',
-                    'description': ('Set modify date of unrar-ed files to the rar-file\'s date.', 'This will allow XBMC to recognize extracted files as recently added even if the movie was released some time ago.'),
+                    'description': ('Set modify date of unrar-ed files to the rar-file\'s date.', 'This will allow Kodi to recognize extracted files as recently added even if the movie was released some time ago.'),
                     'default': False,
                 },
                 {
@@ -1453,7 +1509,7 @@ config = [{
                     'type': 'dropdown',
                     'values': [('Link', 'link'), ('Copy', 'copy'), ('Move', 'move')],
                     'description': ('<strong>Link</strong>, <strong>Copy</strong> or <strong>Move</strong> after download completed.',
-                                    'Link first tries <a href="http://en.wikipedia.org/wiki/Hard_link">hard link</a>, then <a href="http://en.wikipedia.org/wiki/Sym_link">sym link</a> and falls back to Copy.'),
+                                    'Link first tries <a href="http://en.wikipedia.org/wiki/Hard_link" target="_blank">hard link</a>, then <a href="http://en.wikipedia.org/wiki/Sym_link" target="_blank">sym link</a> and falls back to Copy.'),
                     'advanced': True,
                 },
                 {
